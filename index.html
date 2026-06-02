@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عجلة الهدايا الاحترافية</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #1a1a2e;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        h1 {
+            margin-bottom: 25px;
+            color: #e94560;
+            font-size: 24px;
+            text-shadow: 0 2px 10px rgba(233, 69, 96, 0.3);
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        /* قسم السبنر */
+        .spinner-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin-bottom: 25px;
+        }
+
+        /* المؤشر */
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #e94560;
+            z-index: 10;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 25px rgba(0,0,0,0.6);
+            transition: transform 4s cubic-bezier(0.1, 0.8, 0.25, 1);
+        }
+
+        .actions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 280px;
+            margin-top: 10px;
+        }
+
+        .spin-btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(233, 69, 96, 0.4);
+            transition: 0.2s;
+            width: 100%;
+        }
+
+        .spin-btn:hover { background: #ff5e7e; transform: scale(1.02); }
+
+        .spin-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #00fff0;
+            min-height: 35px;
+            text-align: center;
+        }
+
+        /* الزر السري المموه بذكاء في أسفل الشاشة تماماً */
+        .secret-footer-btn {
+            position: absolute;
+            bottom: 10px;
+            font-size: 11px;
+            color: #3f4d71; /* لون قريب من لون الخلفية الداكنة لكي لا يلاحظ */
+            background: none;
+            border: none;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* النافذة المنبثقة للإعدادات (Modal) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.3s ease;
+            z-index: 100;
+            padding: 15px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .control-panel {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 450px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .control-panel h2 {
+            margin-bottom: 20px;
+            font-size: 18px;
+            border-bottom: 2px solid #0f3460;
+            padding-bottom: 10px;
+            color: #00fff0;
+        }
+
+        .close-modal-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: #e94560;
+            border: none;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .gift-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        input {
+            background: #1a1a2e;
+            border: 1px solid #0f3460;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input[type="text"] { flex: 2; width: 60%; }
+        input[type="number"] { flex: 1; width: 25%; text-align: center; }
+
+        .remove-btn {
+            background: #8b0000;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .add-btn, .update-btn {
+            background: #0f3460;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .add-btn:hover { background: #1f4068; }
+        .update-btn { background: #228b22; }
+
+        .total-percentage {
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: right;
+            color: #ffaa00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>عجلة الهدايا التفاعلية</h1>
+
+    <div class="container">
+        <div class="spinner-section">
+            <div class="wheel-container">
+                <div class="pointer"></div>
+                <canvas id="wheel" width="400" height="400"></canvas>
+            </div>
+            
+            <div class="actions-container">
+                <button class="spin-btn" id="spinBtn" onclick="spin()">إبدأ السحب!</button>
+            </div>
+            
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="control-panel">
+            <button class="close-modal-btn" onclick="toggleModal(false)">✕</button>
+            <h2>إعدادات الهدايا والنسب الخفية</h2>
+            <div id="giftsContainer"></div>
+            <button class="add-btn" onclick="addGiftRow()">+ إضافة هدية جديدة</button>
+            <button class="update-btn" onclick="updateWheel()">تحديث وتطبيق التعديلات</button>
+            <div class="total-percentage" id="totalCheck">مجموع النسب الحالي: 100%</div>
+        </div>
+    </div>
+
+    <button class="secret-footer-btn" onclick="askForPassword()">© 2026 جميع الحقوق محفوظة لـ ستور.</button>
+
+    <script>
+        const defaultGifts = [
+            { text: "خصم 10%", probability: 50, color: "#1f4068" },
+            { text: "توصيل مجاني", probability: 30, color: "#e94560" },
+            { text: "هدية مجانية", probability: 15, color: "#0f3460" },
+            { text: "الجائزة الكبرى", probability: 5, color: "#ffaa00" }
+        ];
+
+        let savedGifts = JSON.parse(localStorage.getItem('wheelGifts'));
+        let gifts = (savedGifts && savedGifts.length > 0) ? savedGifts : defaultGifts;
+
+        const canvas = document.getElementById("wheel");
+        const ctx = canvas.getContext("2d");
+        const spinBtn = document.getElementById("spinBtn");
+        let currentRotation = 0;
+        let isSpinning = false;
+
+        function getRandomColor() {
+            const colors = ["#1f4068", "#e94560", "#0f3460", "#ffaa00", "#4e0e2e", "#16a085", "#2980b9", "#8e44ad"];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // دالة فحص كلمة المرور المحددة من قبلك
+        function askForPassword() {
+            const password = prompt("الرجاء إدخال رمز التحقق الخاص بالمسؤول لدخول الإعدادات:");
+            if (password === "1379") {
+                toggleModal(true);
+            } else if (password !== null) {
+                alert("رمز التحقق غير صحيح! لا يمكن الدخول لوضع التعديل.");
+            }
+        }
+
+        function toggleModal(show) {
+            const modal = document.getElementById("settingsModal");
+            if (show) {
+                renderControlPanel();
+                modal.classList.add("active");
+            } else {
+                modal.classList.remove("active");
+            }
+        }
+
+        function drawWheel() {
+            const totalGifts = gifts.length;
+            if (totalGifts === 0) return;
+
+            const sliceAngle = (2 * Math.PI) / totalGifts;
+            let startAngle = 0;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = centerX;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            gifts.forEach((gift) => {
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fillStyle = gift.color;
+                ctx.fill();
+
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 14px Segoe UI";
+                ctx.textAlign = "right";
+                ctx.fillText(gift.text, radius - 20, 5);
+                ctx.restore();
+
+                startAngle += sliceAngle;
+            });
+        }
+
+        function renderControlPanel() {
+            const container = document.getElementById("giftsContainer");
+            container.innerHTML = "";
+
+            gifts.forEach((gift, index) => {
+                const row = document.createElement("div");
+                row.className = "gift-row";
+                row.innerHTML = `
+                    <input type="text" value="${gift.text}" id="text-${index}" placeholder="اسم الهدية">
+                    <input type="number" value="${gift.probability}" id="prob-${index}" min="0" max="100" placeholder="%">
+                    <button class="remove-btn" onclick="removeGift(${index})">حذف</button>
+                `;
+                container.appendChild(row);
+            });
+            checkTotalPercentage();
+        }
+
+        function addGiftRow() {
+            gifts.push({ text: "هدية جديدة", probability: 0, color: getRandomColor() });
+            renderControlPanel();
+        }
+
+        function removeGift(index) {
+            if(gifts.length > 1) {
+                gifts.splice(index, 1);
+                renderControlPanel();
+            } else {
+                alert("يجب أن تبقي على هدية واحدة على الأقل!");
+            }
+        }
+
+        function checkTotalPercentage() {
+            let total = 0;
+            gifts.forEach((_, index) => {
+                const probVal = parseFloat(document.getElementById(`prob-${index}`)?.value) || 0;
+                total += probVal;
+            });
+            
+            const totalCheckEl = document.getElementById("totalCheck");
+            totalCheckEl.innerText = `مجموع النسب الحالي: ${total}%`;
+            
+            if (total !== 100) {
+                totalCheckEl.style.color = "#ff5e7e";
+            } else {
+                totalCheckEl.style.color = "#00fff0";
+            }
+            return total;
+        }
+
+        function updateWheel() {
+            const total = checkTotalPercentage();
+            if (total !== 100) {
+                alert(`تنبيه: مجموع النسب يجب أن يكون 100% تماماً. المجموع الحالي هو ${total}%`);
+                return;
+            }
+
+            gifts.forEach((gift, index) => {
+                gift.text = document.getElementById(`text-${index}`).value;
+                gift.probability = parseFloat(document.getElementById(`prob-${index}`).value) || 0;
+            });
+
+            localStorage.setItem('wheelGifts', JSON.stringify(gifts));
+            drawWheel();
+            alert("تم حفظ التعديلات بنجاح!");
+            toggleModal(false);
+        }
+
+        function spin() {
+            if (isSpinning) return;
+
+            const total = gifts.reduce((sum, g) => sum + g.probability, 0);
+            if (total !== 100) {
+                alert("يرجى فتح الإعدادات والتأكد من أن مجموع النسب يساوي 100% أولاً.");
+                return;
+            }
+
+            document.getElementById("result").innerText = "";
+            isSpinning = true;
+            spinBtn.disabled = true;
+
+            const randomPick = Math.random() * 100;
+            let currentSum = 0;
+            let winningIndex = 0;
+
+            for (let i = 0; i < gifts.length; i++) {
+                currentSum += gifts[i].probability;
+                if (randomPick <= currentSum) {
+                    winningIndex = i;
+                    break;
+                }
+            }
+
+            const totalGifts = gifts.length;
+            const sliceAngleDegrees = 360 / totalGifts;
+            
+            const startAngleDegrees = winningIndex * sliceAngleDegrees;
+            const centerOfSliceDegrees = startAngleDegrees + (sliceAngleDegrees / 2);
+
+            const targetRotation = (360 - centerOfSliceDegrees) - 90;
+            const extraSpins = 6 * 360; 
+            currentRotation += extraSpins + targetRotation - (currentRotation % 360);
+
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                spinBtn.disabled = false;
+                document.getElementById("result").innerText = `🎉 مبروك! فزت بـ: ${gifts[winningIndex].text}`;
+            }, 4000);
+        }
+
+        // تشغيل أولي لعرض العجلة
+        drawWheel();
+    </script>
+</body>
+</html>
